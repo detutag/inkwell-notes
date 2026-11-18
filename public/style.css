@@ -214,6 +214,31 @@ svg { flex: none; display: block; }
 .toast { position: fixed; left: 50%; bottom: 28px; transform: translate(-50%, 20px); background: #2f2f2f; color: #fff; padding: 9px 16px; border-radius: 8px; font-size: 14px; opacity: 0; pointer-events: none; transition: .2s; z-index: 200; box-shadow: var(--shadow); }
 .toast.show { opacity: 1; transform: translate(-50%, 0); }
 
+/* ---------- modal (AI 設定) ---------- */
+.modal { position: fixed; inset: 0; background: rgba(0, 0, 0, .45); z-index: 150; display: grid; place-items: center; padding: 24px; }
+.modal-card { width: 100%; max-width: 560px; max-height: 86vh; display: flex; flex-direction: column; background: var(--bg); border: 1px solid var(--border); border-radius: 12px; box-shadow: var(--shadow); overflow: hidden; }
+.modal-head { display: flex; align-items: center; gap: 8px; padding: 14px 16px; border-bottom: 1px solid var(--border); }
+.modal-head h2 { flex: 1; margin: 0; font-size: 16px; display: flex; align-items: center; gap: 8px; }
+.modal-head h2 svg { width: 18px; height: 18px; }
+.modal-body { padding: 16px; overflow-y: auto; display: flex; flex-direction: column; gap: 16px; }
+.ai-toggle { display: flex; align-items: center; gap: 10px; font-size: 14px; cursor: pointer; }
+.ai-toggle input { width: 16px; height: 16px; accent-color: var(--accent); flex: none; }
+.ai-field { display: flex; flex-direction: column; gap: 6px; }
+.ai-field > label { font-size: 13px; color: var(--muted); }
+.ai-copy { display: flex; gap: 6px; align-items: flex-start; }
+.ai-copy input, .ai-copy textarea { flex: 1; min-width: 0; padding: 8px 10px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg2); font-size: 13px; font-family: var(--mono); outline: 0; }
+.ai-copy textarea { resize: vertical; line-height: 1.5; }
+.ai-copy input:focus, .ai-copy textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(35, 131, 226, .15); }
+.ai-copy .btn { flex: none; background: var(--hover); font-size: 13px; padding: 8px 10px; white-space: nowrap; }
+.ai-copy .btn:hover { background: var(--active); }
+.ai-copy .btn.danger { color: var(--danger); }
+.ai-tools { font-size: 13px; color: var(--muted); }
+.ai-tools summary { cursor: pointer; }
+.ai-tools ul { margin: 8px 0 0; padding-left: 18px; display: flex; flex-wrap: wrap; gap: 2px 18px; }
+.ai-tools code { font-family: var(--mono); font-size: 12px; }
+.ai-hint { margin: 0; font-size: 12.5px; line-height: 1.6; }
+.modal.ai-off .ai-field, .modal.ai-off .ai-tools { opacity: .5; }
+
 .mobile-only { display: none !important; }
 
 /* ---------- mobile ---------- */

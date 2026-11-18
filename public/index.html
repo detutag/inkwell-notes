@@ -40,6 +40,7 @@
       </div>
       <nav id="nav" class="nav"></nav>
       <div class="side-bottom">
+        <button class="nav-item" id="aiBtn"><i data-i="sparkles"></i><span class="label">AI 設定</span></button>
         <button class="nav-item" id="themeBtn"></button>
         <button class="nav-item" id="logoutBtn"><i data-i="logout"></i><span class="label">登出</span></button>
       </div>
@@ -127,6 +128,54 @@
         </div>
       </div>
     </main>
+  </div>
+
+  <!-- AI 設定(MCP)-->
+  <div id="aiModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="aiTitle">
+    <div class="modal-card">
+      <header class="modal-head">
+        <h2 id="aiTitle"><i data-i="sparkles"></i><span>AI 設定</span></h2>
+        <button class="icon-btn" id="aiClose" title="關閉"><i data-i="x"></i></button>
+      </header>
+      <div class="modal-body">
+        <label class="ai-toggle">
+          <input type="checkbox" id="aiEnabled">
+          <span>啟用 MCP 介面,允許外部 AI 讀寫與整理筆記</span>
+        </label>
+
+        <div class="ai-field">
+          <label>MCP 端點(Streamable HTTP)</label>
+          <div class="ai-copy">
+            <input id="aiUrl" readonly>
+            <button class="btn" type="button" data-copy="aiUrl">複製</button>
+          </div>
+        </div>
+
+        <div class="ai-field">
+          <label>存取權杖(Bearer token)</label>
+          <div class="ai-copy">
+            <input id="aiToken" type="password" readonly>
+            <button class="btn" type="button" id="aiReveal">顯示</button>
+            <button class="btn" type="button" data-copy="aiToken">複製</button>
+            <button class="btn danger" type="button" id="aiRotate">重置</button>
+          </div>
+        </div>
+
+        <div class="ai-field">
+          <label>客戶端設定範例(Claude Desktop / Cursor / Cline)</label>
+          <div class="ai-copy">
+            <textarea id="aiConfig" readonly rows="9" spellcheck="false"></textarea>
+            <button class="btn" type="button" data-copy="aiConfig">複製</button>
+          </div>
+        </div>
+
+        <details class="ai-tools">
+          <summary>可用工具(<span id="aiToolCount">0</span>)</summary>
+          <ul id="aiToolList"></ul>
+        </details>
+        <p class="ai-hint muted">啟用後把端點與權杖填入 AI 客戶端即可。外部 AI 可搜尋、建立、更新筆記,批次新增/移除標籤、調整分類與置頂,以及合併標籤。</p>
+      </div>
+    </div>
   </div>
 
   <div id="lightbox" class="lightbox hidden"><img alt=""></div>

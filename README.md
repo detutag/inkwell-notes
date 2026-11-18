@@ -1,6 +1,6 @@
 # Inkwell — Notion 風格 Markdown 筆記
 
-純靜態前端 + Netlify Functions + Neon Postgres，無需構建步驟。
+純靜態前端 + Netlify Functions / Cloudflare Pages Functions + Neon Postgres，無需構建步驟。
 
 ## 功能
 - 桌面三欄：分類/標籤（可折疊）｜筆記列表｜編輯/閱讀區
@@ -17,6 +17,7 @@
 - GFM：表格、代碼高亮、待辦清單（閱讀模式可直接勾選）
 - 分類增刪改、標籤（Enter/逗號添加）、置頂、全文搜索
 - 密碼登入（環境變量控制），HMAC 簽名令牌
+- AI 整合:內建 MCP(Streamable HTTP)介面,可用 Claude Desktop / Cursor / Cline 等外部 AI 讀寫筆記,並批次整理標籤與分類(在側欄「AI 設定」啟用並產生權杖)
 
 快捷鍵：`Ctrl/⌘+S` 保存、`Ctrl/⌘+E` 切換閱讀/編輯、`Alt+N` 新建、`Ctrl/⌘+\` 折疊側欄、`Ctrl/⌘+B/I` 粗體/斜體
 
@@ -48,22 +49,59 @@
 
 4. 重新部署。修改 `APP_PASSWORD` 或 `AUTH_SECRET` 會使所有設備登出。
 
+### Cloudflare Pages
+1. **Neon**:同上,取得 Connection string。
+2. 在 Cloudflare Dashboard → Workers & Pages → Create → Pages,連接此倉庫。
+3. **構建設定**:構建命令留空(或 `echo build`),構建輸出目錄 `public`(`wrangler.toml` 已設定)。
+4. **環境變量**(Settings → Variables and Secrets):與 Netlify 相同,填 `DATABASE_URL`、`APP_PASSWORD`、`AUTH_SECRET`,上傳功能再加 `S3_*`。
+5. 重新部署。API 由 `functions/api/[[path]].js` 提供,已內建 `nodejs_compat`(見 `wrangler.toml`),無需額外設定。
+
+> Cloudflare 版讀取的是 `context.env`,與 Netlify 版各自獨立;S3 預簽名改用 `aws4fetch`(Workers 相容)。可選環境變量 `CF_PAGES_URL` 會自動加入 bucket CORS 白名單。
+
+## AI / MCP
+登入後在左側欄點「AI 設定」,啟用 MCP 介面並複製端點與權杖,貼到 AI 客戶端的設定即可。MCP 為 **Streamable HTTP**,端點 `POST /api/mcp`,以 `Authorization: Bearer <權杖>` 鑒權。
+
+Claude Desktop / Cursor / Cline 設定範例(面板中亦可直接複製):
+```json
+{
+  "mcpServers": {
+    "inkwell": {
+      "type": "http",
+      "url": "https://你的網站/api/mcp",
+      "headers": { "Authorization": "Bearer 你的權杖" }
+    }
+  }
+}
+```
+
+提供的工具:`list_notes`、`get_note`、`search_notes`、`create_note`、`update_note`、`delete_note`、`list_categories`、`create_category`、`rename_category`、`delete_category`、`list_tags`、`set_note_meta`、`bulk_organize`、`rename_tag`、`stats`。外部 AI 可據此建立、搜尋、更新筆記,批次新增/移除標籤、調整分類與置頂,以及合併標籤。權杖可在面板隨時「重置」。
+
 ## 本地開發
 ```bash
 npm install
-cp .env.example .env   # 填入真實值
-npx netlify dev        # http://localhost:8888
+
+# 複製環境變量範例並填入真實值
+cp .env.example .env
+
+# Netlify Functions 本地預覽(http://localhost:8888)
+npx netlify dev
+
+# 或改用 Cloudflare Pages Functions 本地預覽(wrangler 會讀 .dev.vars,可把它指向與 .env 相同內容)
+npx wrangler pages dev public --compatibility-flag=nodejs_compat
 ```
 
 ## 結構
 ```
-public/            index.html, style.css, app.js（前端）
-netlify/functions/ api.mjs（/api/* 全部接口）
-schema.sql         數據表（可選）
+public/                   index.html, style.css, app.js(前端)
+netlify/functions/        api.mjs(/api/* 全部接口,Netlify)
+functions/api/[[path]].js /api/* 全部接口(Cloudflare Pages,含 MCP)
+wrangler.toml             Cloudflare Pages 設定
+netlify.toml              Netlify 設定
+schema.sql                數據表(可選)
 ```
 
 ## API
-`POST /api/login` · `GET /api/meta` · `GET/POST /api/notes` · `GET/PUT/DELETE /api/notes/:id` · `POST /api/categories` · `PUT/DELETE /api/categories/:id` · `POST /api/uploads`（返回預簽名 PUT，瀏覽器直傳 Neon，不經函數中轉）· `GET /api/files/:key` · `POST /api/logout`
+`POST /api/login` · `GET /api/meta` · `GET/POST /api/notes` · `GET/PUT/DELETE /api/notes/:id` · `POST /api/categories` · `PUT/DELETE /api/categories/:id` · `POST /api/uploads`（返回預簽名 PUT，瀏覽器直傳 Neon，不經函數中轉）· `GET /api/files/:key` · `POST /api/logout` · `GET/POST /api/ai`、`POST /api/ai/token`(MCP 設定與權杖)· `POST /api/mcp`(MCP Streamable HTTP,獨立 Bearer 鑒權)
 
 ## License
 

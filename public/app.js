@@ -41,6 +41,7 @@ const ICONS = {
   x: '<path d="M18 6 6 18M6 6l12 12"/>',
   clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
   upload: '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/>',
+  sparkles: '<path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/><path d="M19 15l.7 1.9L21.6 17.6l-1.9.7L19 20.2l-.7-1.9L16.4 17.6l1.9-.7z"/>',
 };
 const svg = (n) => `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${ICONS[n] || ''}</svg>`;
 const hydrateIcons = (root = document) => $$('i[data-i]', root).forEach((i) => { i.outerHTML = svg(i.dataset.i); });
@@ -91,6 +92,7 @@ const S = {
   metaDirty: false,
   saveTimer: null,
   closed: JSON.parse(localStorage.getItem('closedSecs') || '{}'),
+  ai: { enabled: false, token: '', url: '', tools: [] },
 };
 
 /* ================= api ================= */
@@ -780,11 +782,85 @@ const CMDS = {
   upload: () => pickFiles(),
 };
 
+/* ================= AI 設定 (MCP) ================= */
+function aiConfigJson() {
+  return JSON.stringify({
+    mcpServers: {
+      inkwell: {
+        type: 'http',
+        url: $('#aiUrl').value,
+        headers: { Authorization: 'Bearer ' + $('#aiToken').value },
+      },
+    },
+  }, null, 2);
+}
+function fillAi(d) {
+  S.ai = { enabled: !!d.enabled, token: d.token || '', url: d.url || '', tools: d.tools || [] };
+  $('#aiEnabled').checked = S.ai.enabled;
+  $('#aiUrl').value = S.ai.url;
+  $('#aiToken').value = S.ai.token;
+  $('#aiConfig').value = S.ai.token ? aiConfigJson() : '';
+  $('#aiToolList').innerHTML = S.ai.tools.map((t) => `<li><code>${esc(t)}</code></li>`).join('');
+  $('#aiToolCount').textContent = S.ai.tools.length;
+  $('#aiModal').classList.toggle('ai-off', !S.ai.enabled);
+}
+async function loadAi() {
+  try { fillAi(await api('/ai')); } catch (e) { toast(e.message); }
+}
+async function openAiModal() {
+  $('#aiModal').classList.remove('hidden');
+  await loadAi();
+}
+function closeAiModal() { $('#aiModal').classList.add('hidden'); }
+async function setAiEnabled(on) {
+  try {
+    fillAi(await api('/ai', { method: 'POST', body: { enabled: on } }));
+    toast(on ? '已啟用 MCP 介面' : '已停用 MCP 介面');
+  } catch (e) {
+    toast(e.message);
+    loadAi();
+  }
+}
+async function rotateAiToken() {
+  if (!confirm('重置權杖?已設定的 AI 客戶端將立即失效。')) return;
+  try {
+    fillAi(await api('/ai/token', { method: 'POST' }));
+    toast('已產生新權杖');
+  } catch (e) {
+    toast(e.message);
+  }
+}
+function copyFrom(id) {
+  const el = document.getElementById(id);
+  const done = () => toast('已複製');
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(el.value).then(done).catch(() => {});
+  } else {
+    el.removeAttribute('readonly');
+    el.select();
+    document.execCommand('copy');
+    el.setAttribute('readonly', '');
+    done();
+  }
+}
+
 /* ================= events ================= */
 function bind() {
   $('#loginForm').addEventListener('submit', doLogin);
   $('#logoutBtn').addEventListener('click', async () => { await save(); logout(); });
   $('#themeBtn').addEventListener('click', () => applyTheme(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'));
+  $('#aiBtn').addEventListener('click', openAiModal);
+  $('#aiClose').addEventListener('click', closeAiModal);
+  $('#aiModal').addEventListener('click', (e) => { if (e.target === $('#aiModal')) closeAiModal(); });
+  $('#aiEnabled').addEventListener('change', (e) => setAiEnabled(e.target.checked));
+  $('#aiRotate').addEventListener('click', rotateAiToken);
+  $('#aiReveal').addEventListener('click', () => {
+    const t = $('#aiToken');
+    t.type = t.type === 'password' ? 'text' : 'password';
+    $('#aiReveal').textContent = t.type === 'password' ? '顯示' : '隱藏';
+  });
+  $$('[data-copy]').forEach((b) => b.addEventListener('click', () => copyFrom(b.dataset.copy)));
+
   $('#toggleSide').addEventListener('click', toggleSide);
   $('#collapseSide').addEventListener('click', toggleSide);
   $('#scrim').addEventListener('click', closeDrawer);
@@ -921,7 +997,7 @@ function bind() {
     else if (mod && k === 'e' && S.current) { e.preventDefault(); setMode(S.mode === 'read' ? 'edit' : 'read'); }
     else if (e.altKey && k === 'n' && S.token) { e.preventDefault(); newNote(); }
     else if (mod && k === '\\') { e.preventDefault(); toggleSide(); }
-    else if (e.key === 'Escape') { $('#lightbox').classList.add('hidden'); closeDrawer(); }
+    else if (e.key === 'Escape') { $('#lightbox').classList.add('hidden'); closeDrawer(); closeAiModal(); }
   });
 
   // mobile back button
